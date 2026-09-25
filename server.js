@@ -205,7 +205,7 @@ const server = http.createServer((req, res) => {
     const corsHeaders = {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type'
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization'
     };
     if (req.method === 'OPTIONS') {
         res.writeHead(204, corsHeaders);
@@ -356,6 +356,56 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // LitVM seam — read-only; reports pipeline status until mainnet.
+    if (p === '/api/wallet/litvm' && req.method === 'GET') {
+        sendJson(res, 200, { success: true, ...LTC.litvm.config, status: LTC.litvm.status() });
+        return;
+    }
+
+    // Player wallet balance by playerId (server derives the address).
+    if (p === '/api/wallet/player' && req.method === 'GET') {
+        const playerId = url.searchParams.get('playerId');
+        if (!playerId) {
+            sendJson(res, 400, { success: false, error: 'playerId required' });
+            return;
+        }
+        LTC.balanceOfPlayer(playerId).then((b) => {
+            sendJson(res, 200, { success: true, ...b, network: LTC.config.network });
+        }).catch((e) => {
+            sendJson(res, 502, { success: false, error: e.message });
+        });
+        return;
+    }
+
+    // Payout — DISABLED unless LITECRIB_ADMIN_TOKEN is set; requires the
+    // bearer token. amountLtc: number or 'all' (sweep the player's address).
+    if (p === '/api/wallet/payout' && req.method === 'POST') {
+        const ADMIN = process.env.LITECRIB_ADMIN_TOKEN || '';
+        if (!ADMIN) {
+            sendJson(res, 501, { success: false, error: 'payout disabled (set LITECRIB_ADMIN_TOKEN)' });
+            return;
+        }
+        const auth = (req.headers.authorization || '').replace(/^Bearer\s+/i, '');
+        if (auth !== ADMIN) {
+            sendJson(res, 401, { success: false, error: 'unauthorized' });
+            return;
+        }
+        readBody(req).then(async (body) => {
+            try {
+                if (!body || !body.playerId || !body.toAddress) {
+                    sendJson(res, 400, { success: false, error: 'playerId and toAddress required' });
+                    return;
+                }
+                const feerate = body.feerate ? Number(body.feerate) : undefined;
+                const result = await LTC.payoutFromPlayer(body.playerId, body.toAddress, body.amountLtc || 'all', feerate);
+                sendJson(res, 200, { success: true, ...result, network: LTC.config.network });
+            } catch (e) {
+                sendJson(res, 422, { success: false, error: e.message });
+            }
+        });
+        return;
+    }
+
     // ---- Static files (GitHub Pages parity) ---------------------------------------
     let filePath = path.join('.', decodeURIComponent(p));
     if (filePath === '.' || filePath.endsWith(path.sep)) filePath = path.join('./index.html');
@@ -384,16 +434,20 @@ const server = http.createServer((req, res) => {
     });
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-    const nets = require('os').networkInterfaces();
-    let lanIp = '';
-    Object.keys(nets).forEach((name) => {
-        (nets[name] || []).forEach((net) => {
-            if (net.family === 'IPv4' && !net.internal) lanIp = net.address;
+if (require.main === module) {
+    server.listen(PORT, '0.0.0.0', () => {
+        const nets = require('os').networkInterfaces();
+        let lanIp = '';
+        Object.keys(nets).forEach((name) => {
+            (nets[name] || []).forEach((net) => {
+                if (net.family === 'IPv4' && !net.internal) lanIp = net.address;
+            });
         });
+        console.log('\n  LITEcrib relay running!');
+        console.log(`  Local      : http://localhost:${PORT}/`);
+        if (lanIp) console.log(`  LAN (phone): http://${lanIp}:${PORT}/`);
+        console.log('  Connect both devices to the SAME address above.\n');
     });
-    console.log('\n  LITEcrib relay running!');
-    console.log(`  Local      : http://localhost:${PORT}/`);
-    if (lanIp) console.log(`  LAN (phone): http://${lanIp}:${PORT}/`);
-    console.log('  Connect both devices to the SAME address above.\n');
-});
+}
+
+module.exports = { server };

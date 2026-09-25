@@ -60,25 +60,81 @@ In the static fallback (GitHub Pages / Vercel) multiplayer uses `localStorage`
 keyed to the same origin — same-browser only. Point `network.js` at the relay URL
 for real cross-device play.
 
+## Deploying (Render)
+
+`render.yaml` ships a zero-config Blueprint: one web service (Node, free tier) that
+serves the game AND the SSE relay. New > Blueprint > this repo.
+
+Secrets (`LTC_RPC_PASS`, `LITECRIB_SEED`, `LITECRIB_ADMIN_TOKEN`) are `sync: false`
+— Render prompts for them in the dashboard and never commits them.
+
+1. **Set `LITECRIB_SEED`** — a BIP39 mnemonic. If you leave it blank the server
+   generates one and prints it **once** (it is lost on restart, so pin it). It
+   derives every player's deposit address:
+   `m/84'/2'/0'/0/<playerIndex>` (native segwit `tltc1…` on testnet).
+2. **Set `LITECRIB_ADMIN_TOKEN`** — without it `POST /api/wallet/payout` stays
+   disabled (HTTP 501). Generate: `node -e "console.log(require('crypto').randomBytes(24).toString('hex'))"`
+3. **Leave `LTC_NETWORK=testnet`** until real testnet play is verified. Testnet
+   LTC is free from faucets (coins.pilrim.software, `litecoinspace.org`).
+4. **`LTC_RPC_URL/LTC_RPC_USER/LTC_RPC_PASS`** are optional: a Litecoin Core or
+   QuickNode Litecoin RPC is only an extra broadcast/status path — deposits are
+   already covered by the HD wallet + Litecoin Space indexer.
+
+Local dev: `npm install && node server.js` (add a `.env` from `.env.example` if
+you want secrets without exporting them).
+
+## Git hosts
+
+- **Render / Railway / Fly** — the real relay (SSE). This is the multiplayer host.
+- **GitHub Pages / Vercel** — static-only fallback; multiplayer degrades to
+  same-browser localStorage; the wallet panel auto-hides.
+
 ## Litecoin / LitVM wiring
 
-- Server-side only (`server.js`): deposit address generation + TX verification.
-- Verifier: Litecoin Space (`litecoinspace.org`, mempool.space-compatible) LTC
-  indexer first; swap to Litecoin Core RPC (`getblockcount`, `gettransaction`)
-  later if self-hosting a node.
-- LitVM seam: `config` block + `PaymentsProvider` interface so game state and
-  settlement can move on-chain without rewriting the client.
+- `lit-wallet.js` — server-custody HD wallet. One BIP39 seed (`LITECRIB_SEED`)
+  derives deterministic P2WPKH addresses per player; payouts are PSBT-built,
+  locally signed, and broadcast via Litecoin Space `/tx` (or Core RPC
+  `sendrawtransaction` when `LTC_RPC_URL` is set). Keys never leave the host.
+- `payments.js` — shared interface used by `/api/wallet/*`:
+  `getDepositAddress(playerId)`, `getStatus(address)` (Litecoin Space indexer,
+  Core RPC fallback), `balanceOfPlayer(playerId)`, `payoutFromPlayer(...)`.
+- Verifier: Litecoin Space (`litecoinspace.org`, mempool.space-compatible).
+- **LitVM seam** (`/api/wallet/litvm` + `litvm` config block): EVM-compatible
+  rollup on Arbitrum Orbit + BitcoinOS, Litecoin Foundation endorsed. Testnet
+  **LiteForge** is live (Chain ID `4441`,
+  RPC `https://liteforge.rpc.caldera.xyz/http`, explorer
+  `liteforge.explorer.caldera.xyz`). Mainnet / token generation / audits are
+  pending — the seam is read-only today. When settlement moves on-chain, a
+  `Settlement` contract (script hash + game result releases escrow) replaces
+  the `payoutFromPlayer` bridge behind the same API surface, so the client
+  never changes.
+- Wallet providers that speak LTC:
+  - User-facing: Litecoin Core, Electrum-LTC, Trust Wallet, Exodus, Atomic,
+    Coinomi, Litewallet, Ledger/Trezor. QR + address flow is already in the
+    client — no WalletConnect needed (its bitcoin namespace is BTC-focussed).
+  - App-side: self-hosted Litecoin Core RPC or hosted QuickNode Litecoin RPC
+    (Bitcoin-style JSON-RPC), or a payment processor (BTCPay Server, Coinbase
+    Commerce, NowPayments, CoinGate, Plisio, Blockonomics) if you'd rather not
+    hold custody at all.
 
 ## Architecture
 
 ```
-index.html          - Main HTML structure
-styles.css          - 8-bit Litecoin theme (Press Start 2P + VT323 fonts)
-cribbage-engine.js  - Core game logic (pure JS, no deps)
-network.js          - Multiplayer sync (relay or localStorage)
-game.js             - Game state & UI management
-main.js             - Entry point & event handlers
-server.js           - Zero-dep relay: SSE + HTTP POST
+index.html            - Main HTML structure
+styles.css            - 8-bit Litecoin theme (Press Start 2P + VT323 fonts)
+cribbage-engine.js    - Core game logic (pure JS, no deps)
+network.js            - Multiplayer sync (relay or localStorage)
+game.js               - Game state & UI management
+main.js               - Entry point & event handlers
+config.js             - Shared public config (brand/network/features/indexer/LitVM)
+net.js                - HTTP/RPC transport (indexer + Litecoin Core RPC)
+payments.js           - Deposit/status + LitVM provider seam
+lit-wallet.js         - HD wallet: derive addresses, PSBT payouts, broadcast
+wallet.js             - Client wallet panel (auto-hides off-relay)
+server.js             - Zero-dep relay: SSE + HTTP POST + wallet API (system deps: bitcoinjs-lib, bip39, bip32)
+render.yaml           - Render Blueprint (Node web service + secrets)
+.env.example          - Every env var, documented
+litecoin.conf         - Optional Litecoin Core (testnet) RPC template
 ```
 
 ## Credits

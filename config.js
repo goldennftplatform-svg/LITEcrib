@@ -37,7 +37,7 @@
         },
         indexerBase: baseIndexerFor(network),
         baseIndexerFor: baseIndexerFor,
-        version: '1.0.0'
+        version: '1.1.0'
     };
 
     if (typeof process !== 'undefined' && process.env) {
@@ -53,7 +53,14 @@
             network: cfg.network,
             version: cfg.version,
             features: cfg.features,
-            indexerBase: cfg.indexerBase
+            indexerBase: cfg.indexerBase,
+            litvm: {
+                chainId: Number(process.env.LITVM_CHAIN_ID || 4441),
+                rpcUrl: process.env.LITVM_RPC_URL || 'https://liteforge.rpc.caldera.xyz/http',
+                explorer: 'https://liteforge.explorer.caldera.xyz',
+                gasToken: 'zkLTC',
+                live: false
+            }
         };
     };
 

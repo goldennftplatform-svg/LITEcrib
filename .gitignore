@@ -1,7 +1,22 @@
+# dependencies
 node_modules/
-.env
-.DS_Thumbs.db
-*.log
-*.local
-.playwright-mcp/
 
+# secrets — never commit real values
+.env
+*.env.local
+.env.*.local
+
+# Render / deploy
+render-deploy-*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# logs
+*.log
+npm-debug.log*
+
+# test scratch
+tests/_scratch/
+.playwright-mcp/

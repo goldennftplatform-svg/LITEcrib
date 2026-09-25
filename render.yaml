@@ -1,0 +1,38 @@
+# LITEcrib — Render blueprint. Push this repo to GitHub, then in Render:
+#   New > Blueprint > <repo>  → deploys the relay + static game in one service.
+#
+# The relay (server.js) serves the game AND brokers tables via SSE. It is NOT
+# a Vercel fit (serverless drops SSE streams), so this is the multiplayer host.
+#
+# Secrets (LTC_RPC_PASS, LITECRIB_SEED, LITECRIB_ADMIN_TOKEN) are created with
+# sync:false — Render asks you for them in the dashboard, never commits them.
+services:
+  - type: web
+    name: litecrib
+    runtime: node
+    repo: https://github.com/goldennftplatform-svg/LITEcrib
+    branch: main
+    plan: free
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/wallet/config
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: LTC_NETWORK
+        value: testnet            # switch to mainnet only after testnet is verified
+      - key: LTC_RPC_URL
+        sync: false               # optional: Litecoin Core / QuickNode JSON-RPC endpoint
+      - key: LTC_RPC_USER
+        sync: false
+      - key: LTC_RPC_PASS
+        sync: false
+      - key: LITECRIB_SEED
+        sync: false               # BIP39 wallet mnemonic (generated & NOT shown to you on first run)
+      - key: LITECRIB_ADMIN_TOKEN
+        sync: false               # bearer token guarding /api/wallet/payout
+      - key: LITVM_RPC_URL
+        value: https://liteforge.rpc.caldera.xyz/http   # LitVM testnet (chain 4441); clears on mainnet
+      - key: LITVM_CHAIN_ID
+        value: "4441"

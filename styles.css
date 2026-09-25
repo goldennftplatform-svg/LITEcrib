@@ -1769,3 +1769,173 @@ header.pixel-header::after {
 .wallet-bal { font-size: 18px; color: var(--lite-green); }
 .wallet-tip { font-size: 12px; color: var(--lite-orange); margin-top: 4px; }
 .wallet-body .pixel-btn { margin-top: 8px; }
+
+/* =========================================================
+   LITEcrib Gloss pass ("Y2K chrome") — v2
+   Silver bevels, gloss sheen, light springs. Additive-only:
+   later rules win, no layout changes, reduced-motion safe.
+   ========================================================= */
+html {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    overscroll-behavior-y: none;
+}
+
+/* Chrome title treatment — silver gradient text with a slow light sweep */
+.logo h1 {
+    color: var(--lite-white);
+    background-image:
+        linear-gradient(180deg, #ffffff 0%, #d7e4f2 26%, #8ea8c8 47%, #eef4fc 62%, #6d87a9 100%),
+        linear-gradient(115deg, rgba(255,255,255,0) 30%, rgba(255,255,255,.85) 46%, rgba(255,255,255,.18) 56%, rgba(255,255,255,0) 70%);
+    background-size: 100% 100%, 260% 100%;
+    background-position: 0 0, 120% 0;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+    text-shadow: 3px 3px 0 rgba(22,20,18,.92), 6px 6px 0 rgba(22,20,18,.28);
+    animation: chromeSweep 5.5s ease-in-out infinite;
+}
+
+@keyframes chromeSweep {
+    0%, 55% { background-position: 0 0, 120% 0; }
+    88%, 100% { background-position: 0 0, -80% 0; }
+}
+
+/* Gloss sheen across the landing header (::after is already the gold stripe) */
+header.pixel-header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(115deg, rgba(255,255,255,.32) 0%, rgba(255,255,255,.12) 22%, rgba(255,255,255,0) 46%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+.logo, .tagline, .mode-selector h2, .mode-selector { position: relative; z-index: 1; }
+
+.tagline {
+    text-shadow: 2px 2px 0 var(--lite-black), 4px 4px 0 rgba(255,255,255,.22);
+}
+
+/* Buttons: beveled gloss glass over the pixel solid */
+.pixel-btn {
+    position: relative;
+    box-shadow: var(--pixel-shadow),
+        inset 0 2px 0 rgba(255,255,255,.55),
+        inset 0 -3px 0 rgba(0,0,0,.22);
+}
+
+.pixel-btn::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 6px;
+    right: 6px;
+    height: 42%;
+    background: linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,.07));
+    border-radius: 2px;
+    pointer-events: none;
+}
+
+.pixel-btn:hover:not(:disabled) {
+    box-shadow: 6px 6px 0 var(--lite-black),
+        inset 0 2px 0 rgba(255,255,255,.55),
+        inset 0 -3px 0 rgba(0,0,0,.22);
+}
+
+.pixel-btn:active:not(:disabled) {
+    box-shadow: 2px 2px 0 var(--lite-black), inset 0 3px 0 rgba(0,0,0,.3);
+    transform: translate(2px, 2px);
+}
+
+.pixel-btn:active:not(:disabled)::after { opacity: .35; }
+
+/* Mode cards: satin-gloss faces, gold bloom when selected */
+.mode-card {
+    background: linear-gradient(180deg, #ffffff 0%, #f4f8fd 55%, #e8eef7 100%);
+}
+
+.mode-card::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    left: 9px;
+    right: 9px;
+    height: 34%;
+    background: linear-gradient(180deg, rgba(255,255,255,.9), rgba(255,255,255,.14));
+    border-radius: 2px;
+    pointer-events: none;
+}
+
+.mode-card.selected {
+    box-shadow: 6px 6px 0 var(--lite-black), 0 0 26px 4px rgba(224,192,74,.5);
+}
+
+/* In-game bar: 2002 office chrome so the play surface pops */
+.game-header {
+    background: linear-gradient(180deg, #eef4fb 0%, #c8d6e7 46%, #9cb0ca 100%);
+    color: #16263f;
+    box-shadow: inset 0 1px 0 #fff, inset 0 -2px 0 rgba(0,0,0,.18);
+}
+
+.table-id {
+    color: #164a94;
+    text-shadow: 1px 1px 0 rgba(255,255,255,.9);
+}
+
+.mode-badge { background: #16263f; border-color: var(--lite-black); }
+
+.connection-status { color: #16263f; }
+
+/* Board shelf: soft inner bevel */
+.crib-board {
+    box-shadow: inset 0 3px 0 rgba(255,255,255,.4), inset 0 -2px 0 rgba(0,0,0,.06);
+}
+
+/* Card faces: gloss paper, lit corner */
+.card {
+    background: linear-gradient(180deg, #ffffff 0%, #f6f9fd 55%, #e9eff8 100%);
+    box-shadow: var(--pixel-shadow-sm), inset 0 1px 0 #fff;
+}
+
+.card::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 4px;
+    right: 4px;
+    height: 30%;
+    background: linear-gradient(180deg, rgba(255,255,255,.85), rgba(255,255,255,0));
+    border-radius: 3px;
+    pointer-events: none;
+}
+
+.card.selected {
+    box-shadow: 0 20px 0 -4px var(--lite-black), 0 0 0 3px var(--lite-gold), 0 0 18px 3px rgba(224,192,74,.6), var(--pixel-shadow-sm);
+}
+
+.pd-card, .starter-card {
+    background: linear-gradient(180deg, #ffffff, #eef3fb);
+}
+
+/* Wallet panel: glossy chrome-blue net chip */
+.wallet-net {
+    background: linear-gradient(180deg, var(--lite-blue), #143566);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.4), inset 0 -2px 0 rgba(0,0,0,.25);
+}
+
+.wallet-addr {
+    box-shadow: inset 2px 2px 0 var(--lite-dark-sand);
+}
+
+/* Keyboard focus stays visible on the glossy surfaces */
+:focus-visible {
+    outline: 3px solid var(--lite-gold);
+    outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .logo h1 { animation: none; }
+    .logo-icon { animation: none; }
+}

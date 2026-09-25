@@ -55,8 +55,8 @@
             features: cfg.features,
             indexerBase: cfg.indexerBase,
             litvm: {
-                chainId: Number(process.env.LITVM_CHAIN_ID || 4441),
-                rpcUrl: process.env.LITVM_RPC_URL || 'https://liteforge.rpc.caldera.xyz/http',
+                chainId: Number((typeof process !== 'undefined' && process.env && process.env.LITVM_CHAIN_ID) || 4441),
+                rpcUrl: (typeof process !== 'undefined' && process.env && process.env.LITVM_RPC_URL) || 'https://liteforge.rpc.caldera.xyz/http',
                 explorer: 'https://liteforge.explorer.caldera.xyz',
                 gasToken: 'zkLTC',
                 live: false

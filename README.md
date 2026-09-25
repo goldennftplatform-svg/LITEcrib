@@ -1,17 +1,18 @@
-# CRIBBAGE SAFARI 🦁🦓
+# LITEcrib ⚡
 
-Old School 8-Bit Multiplayer Cribbage with Safari Theme
+Old School 8-Bit Multiplayer Cribbage, powered by Litecoin (LTC) and built LitVM-ecosystem ready.
 
 ## Features
 
-- **Multiplayer**: 1v1 Head-to-Head or 3-Player Safari Trio
+- **Multiplayer**: 1v1 Head-to-Head or 3-Player Trio
 - **Authentic Cribbage Rules**: Full scoring (15s, pairs, runs, flushes, nobs)
-- **Real-time Play**: WebSocket-based multiplayer (simulated via localStorage for GitHub Pages)
-- **Safari 8-Bit Art Style**: Pixel-perfect retro aesthetic
+- **Real-time Play**: SSE relay server (multiplayer relay) with localStorage fallback for static hosting
+- **8-Bit Art Style**: Pixel-perfect retro aesthetic, Litecoin-tinted palette
 - **Cribbage Board**: Visual peg tracking with 121 holes
 - **Dealer Rotation**: Automatic dealer chip passing
 - **Phases**: Deal → Discard → Starter → Play → Count Hands → Count Crib
-- **Game Log**: Real-time action log
+- **LTC Payments (roadmap)**: Deposit addresses, TX verification, payout settlement
+- **LitVM Ready**: Network config + PaymentsProvider seam to swap in LitVM contracts
 
 ## Game Rules
 
@@ -45,42 +46,42 @@ Old School 8-Bit Multiplayer Cribbage with Safari Theme
 - **Enter** - Count hand/crib
 - **Escape** - Close modals
 
-## Deployment
+## Running the multiplayer relay
 
-### GitHub Pages
-1. Push to `main` branch
-2. Enable GitHub Pages in repo settings
-3. Site deploys to `https://goldennftplatform-svg.github.io/29/`
+The relay (`server.js`) does NOT run as a static-only page. It serves the game AND
+brokers tables between devices over SSE + HTTP POST. Deploy it to any Node host
+(Render / Railway / Fly), not Vercel (serverless does not support SSE streaming).
 
-### Local Development
 ```bash
-# Simple HTTP server
-npx serve .
-# or
-python -m http.server 8000
+node server.js            # serves the game + relay on PORT (default 8080)
 ```
+
+In the static fallback (GitHub Pages / Vercel) multiplayer uses `localStorage`
+keyed to the same origin — same-browser only. Point `network.js` at the relay URL
+for real cross-device play.
+
+## Litecoin / LitVM wiring
+
+- Server-side only (`server.js`): deposit address generation + TX verification.
+- Verifier: Litecoin Space (`litecoinspace.org`, mempool.space-compatible) LTC
+  indexer first; swap to Litecoin Core RPC (`getblockcount`, `gettransaction`)
+  later if self-hosting a node.
+- LitVM seam: `config` block + `PaymentsProvider` interface so game state and
+  settlement can move on-chain without rewriting the client.
 
 ## Architecture
 
 ```
-index.html      - Main HTML structure
-styles.css      - Safari 8-bit theme (Press Start 2P + VT323 fonts)
-cribbage-engine.js - Core game logic (pure JS, no deps)
-network.js      - Multiplayer sync (localStorage for GH Pages)
-game.js         - Game state & UI management
-main.js         - Entry point & event handlers
+index.html          - Main HTML structure
+styles.css          - 8-bit Litecoin theme (Press Start 2P + VT323 fonts)
+cribbage-engine.js  - Core game logic (pure JS, no deps)
+network.js          - Multiplayer sync (relay or localStorage)
+game.js             - Game state & UI management
+main.js             - Entry point & event handlers
+server.js           - Zero-dep relay: SSE + HTTP POST
 ```
-
-## Multiplayer Note
-
-For GitHub Pages (static hosting), multiplayer uses `localStorage` as a simple message bus. All players must have the page open in the same browser (or use a shared localStorage via same origin). For production, replace `network.js` with a WebSocket server.
 
 ## Credits
 
 - Fonts: Press Start 2P, VT323 (Google Fonts)
-- Inspired by classic 8-bit safari aesthetics
-- Cribbage rules per American Cribbage Congress
-
----
-
-**MADE FOR THE SAVANNAH** 🌴
+- Forked from the "29" Cribbage Safari — rebranded and Litecoin-ready.

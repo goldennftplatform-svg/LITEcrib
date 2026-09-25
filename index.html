@@ -3,8 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-    <meta name="theme-color" content="#365E1F">
-    <title>CRIBBAGE SAFARI - Multiplayer Card Game</title>
+    <meta name="theme-color" content="#2251A8">
+    <title>LITEcrib - Litecoin Cribbage</title>
     <link rel="stylesheet" href="styles.css?v=20260918b">
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 </head>
@@ -16,10 +16,10 @@
                 <header class="pixel-header">
                     <div class="logo">
                         <span class="logo-icon">🦁</span>
-                        <h1>CRIBBAGE SAFARI</h1>
-                        <span class="logo-icon">🦓</span>
+                        <h1>LITEcrib</h1>
+                        <span class="logo-icon">⚡</span>
                     </div>
-                    <p class="tagline">OLD SCHOOL 8-BIT MULTIPLAYER</p>
+                    <p class="tagline">LITECOIN-POWERED 8-BIT CRIBBAGE</p>
                 </header>
                 
                 <div class="mode-selector">
@@ -33,13 +33,13 @@
                         </button>
                         <button class="mode-card" data-mode="3player">
                             <div class="mode-icon">🦏</div>
-                            <h3>SAFARI TRIO</h3>
+                            <h3>LITE TRIO</h3>
                             <p>3-Player Cribbage</p>
                             <span class="players">3 PLAYERS</span>
                         </button>
                     </div>
                     <div class="ai-section">
-                        <h2>SOLO SAFARI</h2>
+                        <h2>SOLO PLAY</h2>
                         <button class="pixel-btn ai-btn" id="play-ai-btn">
                             <span class="btn-icon">🤖</span>
                             <span>PLAY VS AI</span>
@@ -61,8 +61,22 @@
 
                 <div class="player-setup">
                     <h2>YOUR NAME</h2>
-                    <input type="text" id="player-name" placeholder="Enter your safari name..." maxlength="12">
-                    <button class="pixel-btn" id="join-btn">JOIN SAFARI</button>
+                    <input type="text" id="player-name" placeholder="Enter your name..." maxlength="12">
+                    <button class="pixel-btn" id="join-btn">JOIN LITEcrib</button>
+                </div>
+
+                <div class="wallet-panel" id="wallet-panel" hidden>
+                    <div class="wallet-header">
+                        <h2>LITECOIN WALLET</h2>
+                        <span class="wallet-net" id="wallet-net">TESTNET</span>
+                    </div>
+                    <div class="wallet-body">
+                        <div class="wallet-addr-label">DEPOSIT ADDRESS</div>
+                        <div class="wallet-addr" id="wallet-addr">—</div>
+                        <div class="wallet-bal" id="wallet-bal">0 LTC</div>
+                        <p class="wallet-tip" id="wallet-tip"></p>
+                        <button class="pixel-btn" id="wallet-refresh-btn">REFRESH</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -169,7 +183,7 @@
 
                 <!-- Chat / Log -->
                 <div class="game-log" id="game-log">
-                    <div class="log-header">SAFARI LOG</div>
+                    <div class="log-header">GAME LOG</div>
                     <div class="log-messages" id="log-messages"></div>
                 </div>
             </div>
@@ -200,9 +214,11 @@
         </div>
     </div>
 
+    <script src="config.js?v=20260924-litecrib"></script>
     <script src="game.js?v=20260920-startup"></script>
     <script src="network.js?v=20260920-startup"></script>
     <script src="cribbage-engine.js?v=20260920-startup"></script>
     <script src="main.js?v=20260920-startup"></script>
+    <script src="wallet.js?v=20260924-litecrib"></script>
 </body>
 </html>

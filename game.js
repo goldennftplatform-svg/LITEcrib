@@ -98,7 +98,7 @@ class CribbageGame {
             return `
                 <div class="table-card ${isFull ? 'full' : ''} ${isCurrentPlayer ? 'current' : ''}" data-table-id="${table.id}">
                     <div class="table-icon">${table.mode === '1v1' ? '🦒' : '🦏'}</div>
-                    <h4>${table.mode === '1v1' ? 'HEAD-TO-HEAD' : 'SAFARI TRIO'}</h4>
+                    <h4>${table.mode === '1v1' ? 'HEAD-TO-HEAD' : 'LITE TRIO'}</h4>
                     <div class="table-meta">Table #${table.id.slice(-5).toUpperCase()}</div>
                     <div class="table-players">
                         ${Array.from({length: maxPlayers}, (_, i) => `
@@ -119,7 +119,7 @@ class CribbageGame {
     showCreateTableModal() {
         const mode = document.querySelector('.mode-card.selected')?.dataset.mode || '1v1';
         this.showModal('CREATE TABLE', `
-            <p>Create a new ${mode === '1v1' ? 'Head-to-Head' : 'Safari Trio'} table?</p>
+            <p>Create a new ${mode === '1v1' ? 'Head-to-Head' : 'Lite Trio'} table?</p>
         `, [
             { text: 'CREATE', action: () => this.createTable(mode), class: 'primary' },
             { text: 'CANCEL', action: () => this.hideModal() }
@@ -181,7 +181,7 @@ class CribbageGame {
         document.getElementById('landing-screen').classList.remove('active');
         document.getElementById('game-screen').classList.add('active');
         
-        document.getElementById('table-id-display').textContent = 'LOCAL SAFARI';
+        document.getElementById('table-id-display').textContent = 'LOCAL LITEcrib';
         document.getElementById('mode-badge').textContent = this.engine.playerCount === 2 ? '1v1' : '3P';
         document.getElementById('status-dot').classList.add('connected');
         document.getElementById('status-text').textContent = 'LOCAL GAME';
@@ -221,7 +221,7 @@ class CribbageGame {
             this.handleStateUpdate(tableState.state);
         }
         
-        this.addLogEntry('Joined the safari!', 'system');
+        this.addLogEntry('Joined the table!', 'system');
     }
 
     handleStateUpdate(state) {

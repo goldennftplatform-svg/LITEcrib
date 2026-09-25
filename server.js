@@ -1,5 +1,5 @@
 /*
- * Cribbage Safari — multiplayer relay server (zero dependencies).
+ * LITEcrib - Litecoin multiplayer relay server (zero dependencies).
  *
  * Serves the static game files AND brokers tables between devices.
  *
@@ -26,6 +26,9 @@
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
+
+const config = require('./config');
+const LTC = require('./payments');
 
 const PORT = process.env.PORT || 8080;
 
@@ -223,7 +226,7 @@ const server = http.createServer((req, res) => {
         res.write('retry: 1500\n\n');
 
         const stream = { res, playerId, tableId, flags: new Set() };
-        streams.add(streamuhi);
+        streams.add(stream);
 
         // Initial catch-up: table list for everyone; state+roster for the table.
         const list = Array.from(tables.values()).map(tableToJson);
@@ -321,6 +324,38 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // ---- API: LITEcrib wallet (LTC deposits + LitVM seam) ----------------------
+    if (p === '/api/wallet/config' && req.method === 'GET') {
+        sendJson(res, 200, LTC.config);
+        return;
+    }
+
+    if (p === '/api/wallet/deposit' && req.method === 'POST') {
+        readBody(req).then(async (body) => {
+            try {
+                const account = await LTC.getDepositAddress(body && body.playerId);
+                sendJson(res, 200, { success: true, ...account, network: LTC.config.network });
+            } catch (e) {
+                sendJson(res, 501, { success: false, error: e.message });
+            }
+        });
+        return;
+    }
+
+    if (p === '/api/wallet/status' && req.method === 'GET') {
+        const address = url.searchParams.get('address');
+        if (!address) {
+            sendJson(res, 400, { success: false, error: 'address required' });
+            return;
+        }
+        LTC.getStatus(address).then((status) => {
+            sendJson(res, 200, { success: true, address, network: LTC.config.network, ...status });
+        }).catch((e) => {
+            sendJson(res, 502, { success: false, error: e.message });
+        });
+        return;
+    }
+
     // ---- Static files (GitHub Pages parity) ---------------------------------------
     let filePath = path.join('.', decodeURIComponent(p));
     if (filePath === '.' || filePath.endsWith(path.sep)) filePath = path.join('./index.html');
@@ -357,7 +392,7 @@ server.listen(PORT, '0.0.0.0', () => {
             if (net.family === 'IPv4' && !net.internal) lanIp = net.address;
         });
     });
-    console.log('\n  Cribbage Safari relay running!');
+    console.log('\n  LITEcrib relay running!');
     console.log(`  Local      : http://localhost:${PORT}/`);
     if (lanIp) console.log(`  LAN (phone): http://${lanIp}:${PORT}/`);
     console.log('  Connect both devices to the SAME address above.\n');

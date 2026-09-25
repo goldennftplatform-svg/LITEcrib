@@ -1,13 +1,22 @@
-{
-  "name": "cribbage-safari",
-  "version": "1.0.0",
-  "description": "Old School 8-Bit Multiplayer Cribbage with Safari Theme",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js"
-  },
-  "keywords": ["cribbage", "multiplayer", "game", "retro", "8-bit"],
-  "author": "Golden NFT Platform",
-  "license": "MIT"
+﻿{
+    "name":  "litecrib",
+    "version":  "1.0.0",
+    "description":  "LITEcrib - 8-Bit Multiplayer Cribbage powered by Litecoin and LitVM",
+    "main":  "server.js",
+    "scripts":  {
+                    "start":  "node server.js",
+                    "dev":  "node server.js"
+                },
+    "keywords":  [
+                     "cribbage",
+                     "multiplayer",
+                     "game",
+                     "litecoin",
+                     "litvm",
+                     "retro",
+                     "8-bit",
+                     "ltc"
+                 ],
+    "author":  "LITEcrib",
+    "license":  "MIT"
 }

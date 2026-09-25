@@ -1,5 +1,5 @@
 /*
- * Cribbage Safari 29 - multiplayer networking client.
+ * LITEcrib - Litecoin-powered multiplayer networking client.
  *
  * One public surface (game.js is byte-compatible, needs no changes), two
  * transports:

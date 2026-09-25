@@ -2,7 +2,7 @@
 const { chromium, devices } = require('playwright');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
-const url = 'https://goldennftplatform-svg.github.io/29/';
+const url = 'https://goldennftplatform-svg.github.io/LITEcrib/';
 
 (async () => {
     fs.mkdirSync('public-evidence', { recursive: true });

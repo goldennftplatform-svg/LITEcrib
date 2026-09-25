@@ -49,6 +49,10 @@ const NETWORKS = {
 const ACCOUNT_HOUSE = 0;          // player deposit/winning addresses
 const ACCOUNT_POOL = 1;           // reserved: house/operator pool
 
+// Standard user wallet path: Electrum-LTC restores it from the BIP39 mnemonic
+// without custom derivation (default BIP84 native segwit account).
+const USER_PATH = "m/84'/2'/0'/0/0";
+
 let rootNode = null;
 let warned = false;
 
@@ -145,11 +149,15 @@ function depositAddress(playerId) {
 // Spend up to amountLtc from a player's deposit address. Returns { txid, sent, fee }.
 // amountLtc: number, or 'all' to sweep every confirmed UTXO.
 async function spendFromPlayer({ playerId, toAddress, amountLtc, feerate } = {}) {
-    const network = getNetwork();
-    const index = playerIndex(playerId);
     const source = addressFor(playerId, ACCOUNT_HOUSE).address;
     const keyPair = keyPairFor(playerId, ACCOUNT_HOUSE);
+    return spendWithKeyPair({ keyPair, source, toAddress, amountLtc, feerate });
+}
 
+// Shared build/sign/finalize/broadcast engine — the one place a transaction
+// is assembled. Both master-seed (house) and per-user mnemonic wallets drive it.
+async function spendWithKeyPair({ keyPair, source, toAddress, amountLtc, feerate, meta } = {}) {
+    const network = getNetwork();
     const utxos = (await listUtxos(source)).filter((u) => u.confirmed);
     const have = utxos.reduce((s, u) => s + u.value, 0);
     if (have === 0) throw new Error('No confirmed funds on ' + source);
@@ -200,7 +208,43 @@ async function spendFromPlayer({ playerId, toAddress, amountLtc, feerate } = {})
     const tx = psbt.extractTransaction();
     const txid = await broadcast(tx.toHex());
 
-    return { txid, sent: sendValue / 1e8, fee: fee / 1e8, source, index };
+    const out = { txid, sent: sendValue / 1e8, fee: fee / 1e8, source };
+    if (meta) out.meta = meta;
+    return out;
+}
+
+// ---------------------------------------------------------------------------
+// Per-user custody wallets. Each user gets an INDEPENDENT BIP39 mnemonic; their
+// funds live at USER_PATH, so exporting the mnemonic = full self-custody
+// recovery (Electrum-LTC imports it directly). The server keeps a copy for
+// custody/withdrawals until the user sweeps or the operator releases keys.
+// ---------------------------------------------------------------------------
+function issueUserWallet() {
+    const mnemonic = bip39.generateMnemonic(256);
+    const { address, keyPair } = userWalletFromMnemonic(mnemonic);
+    return { mnemonic, path: USER_PATH, address, keyPair };
+}
+
+function userWalletFromMnemonic(mnemonic) {
+    if (!bip39.validateMnemonic(mnemonic)) throw new Error('Invalid BIP39 mnemonic');
+    const root = bip32.fromSeed(bip39.mnemonicToSeedSync(mnemonic));
+    const node = root.derivePath(USER_PATH);
+    const keyPair = ECPair.fromPrivateKey(Buffer.from(node.privateKey), { network: getNetwork() });
+    const address = bitcoin.payments.p2wpkh({ pubkey: keyPair.publicKey, network: getNetwork() }).address;
+    return { address, keyPair };
+}
+
+async function spendFromUserWallet({ mnemonic, toAddress, amountLtc, feerate } = {}) {
+    const w = userWalletFromMnemonic(mnemonic);
+    return spendWithKeyPair({ keyPair: w.keyPair, source: w.address, toAddress, amountLtc, feerate });
+}
+
+async function userBalanceFromMnemonic(mnemonic) {
+    const { address } = userWalletFromMnemonic(mnemonic);
+    const utxos = await listUtxos(address);
+    const confirmed = utxos.filter((u) => u.confirmed).reduce((s, u) => s + u.value, 0);
+    const pending = utxos.filter((u) => !u.confirmed).reduce((s, u) => s + u.value, 0);
+    return { address, confirmedLtc: confirmed / 1e8, unconfirmedLtc: pending / 1e8 };
 }
 
 async function balanceOf(playerId) {
@@ -215,6 +259,10 @@ module.exports = {
     networkName: () => config.network,
     depositAddress,
     spendFromPlayer,
+    spendFromUserWallet,
+    issueUserWallet,
+    userWalletFromMnemonic,
+    userBalanceFromMnemonic,
     balanceOf,
     listUtxos,
     broadcast,

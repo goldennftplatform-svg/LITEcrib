@@ -89,6 +89,26 @@ you want secrets without exporting them).
 - **GitHub Pages / Vercel** — static-only fallback; multiplayer degrades to
   same-browser localStorage; the wallet panel auto-hides.
 
+## Accounts, SSO & custody wallets
+
+- `POST /api/auth/register` `{email, password}` — creates the account **and issues a
+  fresh custody wallet**: an independent BIP39 mnemonic whose funds live at the
+  standard Electrum-LTC path `m/84'/2'/0'/0/0`. Returns a session token; the
+  mnemonic is never returned here.
+- `POST /api/auth/login` / `GET /api/auth/me` — salted-scrypt passwords,
+  opaque bearer sessions (in-memory, lost on restart ⇒ re-login), login/export
+  throttled after 5 failures/15min.
+- `POST /api/wallet/export` (logged-in + **password re-checked**) — returns the
+  user's BIP39 mnemonic. Because wallets are standard BIP84, exporting =
+  self-custody exit: the mnemonic restores the *same address* in Electrum-LTC
+  (covered by `tests/sso-e2e.cjs` assertion #7 — the address derived from the
+  exported mnemonic must equal the issued address).
+- Accounts persist in `data/users.json` (atomic writes; repo-excluded). Sessions
+  do not. Custody mnemonics are plaintext-on-host for the testnet prototype —
+  production needs KMS envelope encryption at rest.
+- Reuse: the PSBT spend/broadcast engine already backs payout for both master-seed
+  (guest `playerId`) and per-user mnemonic wallets.
+
 ## Litecoin / LitVM wiring
 
 - `lit-wallet.js` — server-custody HD wallet. One BIP39 seed (`LITECRIB_SEED`)
@@ -129,12 +149,15 @@ main.js               - Entry point & event handlers
 config.js             - Shared public config (brand/network/features/indexer/LitVM)
 net.js                - HTTP/RPC transport (indexer + Litecoin Core RPC)
 payments.js           - Deposit/status + LitVM provider seam
-lit-wallet.js         - HD wallet: derive addresses, PSBT payouts, broadcast
+lit-wallet.js         - HD wallet: derive addresses, PSBT payouts, broadcast, per-user issue/export
+auth.js               - SSO: register/login/me/export (scrypt + bearer sessions + throttle)
+store.js              - Durable JSON account store (data/, atomic writes)
 wallet.js             - Client wallet panel (auto-hides off-relay)
-server.js             - Zero-dep relay: SSE + HTTP POST + wallet API (system deps: bitcoinjs-lib, bip39, bip32)
+server.js             - Zero-dep relay: SSE + HTTP POST + wallet/Auth API (system deps: bitcoinjs-lib, bip39, bip32)
 render.yaml           - Render Blueprint (Node web service + secrets)
 .env.example          - Every env var, documented
 litecoin.conf         - Optional Litecoin Core (testnet) RPC template
+tests/                - sso-e2e (accounts/export/recovery), wallet-e2e (routes), wallet-psbt (signing), public-browser
 ```
 
 ## Credits

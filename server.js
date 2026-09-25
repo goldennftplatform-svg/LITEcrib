@@ -29,6 +29,10 @@ const path = require('path');
 
 const config = require('./config');
 const LTC = require('./payments');
+const auth = require('./auth');
+const store = require('./store');
+
+store.load(); // accounts survive restarts (sessions do not)
 
 const PORT = process.env.PORT || 8080;
 
@@ -324,6 +328,66 @@ const server = http.createServer((req, res) => {
         return;
     }
 
+    // ---- API: SSO auth + custody wallets ---------------------------------------
+    // register: creates the account AND issues a fresh BIP39 wallet. Key export
+    // is a separate, password-rechecked endpoint — never returned on login.
+    if (p === '/api/auth/register' && req.method === 'POST') {
+        readBody(req).then((body) => {
+            try {
+                const r = auth.registerUser(body && body.email, body && body.password, req.socket.remoteAddress);
+                sendJson(res, 200, { success: true, token: r.token, user: r.user });
+            } catch (e) {
+                sendJson(res, e.code || 500, { success: false, error: e.message || 'server error' });
+            }
+        });
+        return;
+    }
+
+    if (p === '/api/auth/login' && req.method === 'POST') {
+        readBody(req).then((body) => {
+            try {
+                const r = auth.login(body && body.email, body && body.password, req.socket.remoteAddress);
+                sendJson(res, 200, { success: true, token: r.token, user: r.user });
+            } catch (e) {
+                sendJson(res, e.code || 500, { success: false, error: e.message || 'server error' });
+            }
+        });
+        return;
+    }
+
+    // me: who am I (+ wallet address, never the mnemonic).
+    if (p === '/api/auth/me' && req.method === 'GET') {
+        const user = auth.getSessionUser((req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
+        if (!user) {
+            sendJson(res, 401, { success: false, error: 'unauthorized' });
+            return;
+        }
+        LTC.userBalance(user.mnemonic).then((bal) => {
+            sendJson(res, 200, { success: true, user: { ...auth.publicUser(user) }, balance: bal });
+        }).catch(() => {
+            sendJson(res, 200, { success: true, user: auth.publicUser(user), balance: null });
+        });
+        return;
+    }
+
+    // export: user proves password, gets their BIP39 mnemonic (self-custody exit).
+    if (p === '/api/wallet/export' && req.method === 'POST') {
+        const user = auth.getSessionUser((req.headers.authorization || '').replace(/^Bearer\s+/i, ''));
+        if (!user) {
+            sendJson(res, 401, { success: false, error: 'unauthorized' });
+            return;
+        }
+        readBody(req).then((body) => {
+            try {
+                const w = auth.exportWallet(user, body && body.password, req.socket.remoteAddress);
+                sendJson(res, 200, { success: true, ...w, network: LTC.config.network });
+            } catch (e) {
+                sendJson(res, e.code || 500, { success: false, error: e.message || 'server error' });
+            }
+        });
+        return;
+    }
+
     // ---- API: LITEcrib wallet (LTC deposits + LitVM seam) ----------------------
     if (p === '/api/wallet/config' && req.method === 'GET') {
         sendJson(res, 200, LTC.config);
@@ -446,7 +510,9 @@ if (require.main === module) {
         console.log('\n  LITEcrib relay running!');
         console.log(`  Local      : http://localhost:${PORT}/`);
         if (lanIp) console.log(`  LAN (phone): http://${lanIp}:${PORT}/`);
-        console.log('  Connect both devices to the SAME address above.\n');
+        console.log('  Connect both devices to the SAME address above.');
+        console.log('  Wallet API : /api/auth/* (SSO), /api/wallet/* (deposit, status, payout, export)');
+        console.log('  LitVM seam : /api/wallet/litvm (LiteForge testnet, chain ' + LTC.litvm.config.chainId + ')\n');
     });
 }
 

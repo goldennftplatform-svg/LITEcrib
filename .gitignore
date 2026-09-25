@@ -6,6 +6,9 @@ node_modules/
 *.env.local
 .env.*.local
 
+# runtime data — custodied mnemonics live here (repo-external in tests too)
+data/
+
 # Render / deploy
 render-deploy-*.log
 

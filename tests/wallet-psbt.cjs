@@ -10,6 +10,7 @@ const process = require('process');
 process.env.LITECRIB_SEED = process.env.LITECRIB_SEED || 'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon about';
 
 const assert = require('assert');
+const bip39 = require('bip39');
 const net = require('../net.js');
 const wallet = require('../lit-wallet.js');
 
@@ -58,6 +59,18 @@ net.jsonRequest = (url, opts) => {
     try { await wallet.spendFromPlayer({ playerId: 'psbt_player', toAddress: 'tltc1qplzdrwkh5qvctxwddxchn3z7f9xpuae66z623t', amountLtc: 'all', feerate: 1 }); }
     catch (e) { threw = /No confirmed funds/.test(e.message); }
     ok('empty wallet errors cleanly', threw);
+
+    // 5) per-user mnemonic wallets: issue -> save mnemonic -> restore address
+    const issued = wallet.issueUserWallet();
+    ok('issueUserWallet returns valid mnemonic on tltc', bip39.validateMnemonic(issued.mnemonic) && /^tltc1/.test(issued.address));
+    const restored = wallet.userWalletFromMnemonic(issued.mnemonic);
+    assert.strictEqual(restored.address, issued.address, 'restored from mnemonic must match issued address (Electrum path)');
+    ok('mnemonic restores issued user address (Electrum-compatible)', true);
+
+    // 6) user-wallet spend signs + broadcasts through the same engine
+    utxoQueue = [[UTXO]];
+    const r3 = await wallet.spendFromUserWallet({ mnemonic: issued.mnemonic, toAddress: 'tltc1qplzdrwkh5qvctxwddxchn3z7f9xpuae66z623t', amountLtc: 0.01, feerate: 1 });
+    ok('per-user wallet spend signed', r3.txid === 'mock-broadcast-txid' && Math.abs(r3.sent - 0.01) < 1e-9, 'sent=' + r3.sent);
 
     net.jsonRequest = ORIG;
     const fails = results.filter((x) => !x);

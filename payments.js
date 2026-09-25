@@ -87,6 +87,8 @@ module.exports = {
         }
     },
     balanceOfPlayer: (playerId) => wallet.balanceOf(playerId),
+    userBalance: (mnemonic) => wallet.userBalanceFromMnemonic(mnemonic),
+    issueUserWallet: () => wallet.issueUserWallet(),
     payoutFromPlayer: (playerId, toAddress, amountLtc, feerate) =>
         wallet.spendFromPlayer({ playerId, toAddress, amountLtc, feerate }),
     providers: { net, wallet }
